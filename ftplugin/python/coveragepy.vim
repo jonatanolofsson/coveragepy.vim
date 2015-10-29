@@ -103,10 +103,10 @@ function! s:HighlightMissing() abort
     endif
     call s:ClearSigns()
 
-    let current_buffer = matchlist(expand("%:p"), '\v(.*)(.py)')[1]
+    let current_buffer = expand("%:p")
 
     for path in keys(g:coveragepy_session_map)
-        if current_buffer =~ path
+        if current_buffer == path
             for position in g:coveragepy_session_map[path]
                 execute(":sign place ". position ." line=". position ." name=uncovered buffer=".bufnr("%"))
             endfor
@@ -116,7 +116,6 @@ function! s:HighlightMissing() abort
         endif
     endfor
     execute(":sign place 1 line=1  name=covered buffer=".bufnr("%"))
-    call s:Echo("Coveragepy ==> 100% covered", 1)
 endfunction
 
 
@@ -207,7 +206,8 @@ function! s:ReportParse() abort
             let match_split  = split(line, '%')
             let line_nos     = match_split[-1]
             let all_line_nos = s:LineNumberParse(line_nos)
-            let path_to_lines[path] = all_line_nos
+            let absolute_path = g:coveragepy_path . '/' . path
+            let path_to_lines[absolute_path] = all_line_nos
         endif
     endfor
     let g:coveragepy_session_map = path_to_lines
@@ -220,8 +220,8 @@ function! s:LineNumberParse(numbers) abort
     let parsed_list = []
     let splitted = split(a:numbers, ',')
     for line_no in splitted
-        if line_no =~ '-'
-            let split_nos = split(line_no, '-')
+        if line_no =~ '->'
+            let split_nos = split(line_no, '->')
             let first = s:Strip(split_nos[0])
             let second = s:Strip(split_nos[1])
             for range_no in range(first, second)
@@ -274,7 +274,7 @@ endfunction
 
 
 function! s:OpenBuffer() abort
-    let path = split(getline('.'), ' ')[0] . '.py'
+    let path = split(getline('.'), ' ')[0]
     let absolute_path = g:coveragepy_path . '/' . path
     if filereadable(absolute_path)
         execute 'wincmd p'
