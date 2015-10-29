@@ -181,10 +181,16 @@ function! s:CoveragepyReport() abort
         if exists("g:coveragepy_rcfile")
             let s:coveragepy_rcfile=" --rcfile=".resolve(expand(g:coveragepy_rcfile))
         else
-            let s:coveragepy_rcfile=""
+            let found = findfile(".coveragerc", ".;")
+            if (found !~ '.coveragerc')
+                let s:coveragepy_rcfile=""
+            else
+                let s:coveragepy_rcfile=" --rcfile=".found
+            endif
         endif
 
         let cmd = g:coveragepy_executable." report -m -i".s:coveragepy_rcfile
+        call s:Echo(cmd)
         let out = system(cmd)
         let g:coveragepy_last_session = out
         call s:ReportParse()
@@ -222,6 +228,13 @@ function! s:LineNumberParse(numbers) abort
     for line_no in splitted
         if line_no =~ '->'
             let split_nos = split(line_no, '->')
+            let first = s:Strip(split_nos[0])
+            let second = s:Strip(split_nos[1])
+            for range_no in range(first, second)
+                call add(parsed_list, range_no)
+            endfor
+        elseif line_no =~ '-'
+            let split_nos = split(line_no, '-')
             let first = s:Strip(split_nos[0])
             let second = s:Strip(split_nos[1])
             for range_no in range(first, second)
